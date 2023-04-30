@@ -3,9 +3,9 @@ import NewRecipeModal from './NewRecipeModal';
 import {Text, Box, HStack, IconButton, ScrollView} from 'native-base';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Dimensions} from 'react-native';
+import {Dimensions, TouchableOpacity} from 'react-native';
 
-const MyRecipes = () => {
+const MyRecipes = ({navigation}) => {
   const [recipes, setRecipes] = useState([]);
   const [openModal, setOpenModal] = useState(false);
 
@@ -50,18 +50,28 @@ const MyRecipes = () => {
       </HStack>
       <ScrollView>
         <HStack flexWrap="wrap" justifyContent="space-between" pl={2}>
-          {recipes.map(recipe => (
-            <Box
+          {recipes.map((recipe, index) => (
+            <TouchableOpacity
               key={recipe.id}
-              bg="white"
-              shadow={3}
-              rounded="xl"
-              p={5}
-              width={boxSize}
-              mb={4}>
-              <Text fontWeight="bold">{recipe.name}</Text>
-              <Text>{recipe.description}</Text>
-            </Box>
+              onPress={() => {
+                navigation.navigate('RecipeView', {
+                  recipes: recipes,
+                  setRecipes: setRecipes,
+                  recipe: recipe,
+                  recipeIndex: index,
+                });
+              }}>
+              <Box
+                bg="white"
+                shadow={3}
+                rounded="xl"
+                p={5}
+                width={boxSize}
+                mb={4}>
+                <Text fontWeight="bold">{recipe.name}</Text>
+                <Text>{recipe.description}</Text>
+              </Box>
+            </TouchableOpacity>
           ))}
         </HStack>
       </ScrollView>
