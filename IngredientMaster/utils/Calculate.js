@@ -2,19 +2,17 @@ import {DECREASE, INCREASE, units} from './Constants';
 
 const unitConversions = {
   tsp: {
-    tbsp: {incr: 1 / 3, decr: 3},
-    cup: {incr: 1 / 48, decr: 48},
+    incr: {unit: units.TBSP, conversion: 1 / 3}, //incr
     max: 1,
   },
   tbsp: {
-    min: 1 / 3,
-    tsp: {incr: 1 / 3, decr: 3},
-    cup: {incr: 1 / 16, decr: 16},
+    min: 1 / 4,
     max: 2,
+    decr: {unit: units.TSP, conversion: 3}, //decr
+    incr: {unit: units.CUP, conversion: 1 / 16}, //incr
   },
   cup: {
-    tsp: {incr: 1 / 48, decr: 48},
-    tbsp: {incr: 1 / 16, decr: 16},
+    decr: {unit: units.TBSP, conversion: 16}, //decr
     min: 1 / 8,
   },
 };
@@ -23,10 +21,11 @@ export function adjustIngredientMeasurement(num, ratio) {
   if (ratio === 0) return num;
   const adjustedNumber = num * ratio;
   // round to 2 decimal places
-  return Math.round(adjustedNumber * 100) / 100;
+  return Math.round(adjustedNumber * 1000) / 1000;
 }
 
 export function shouldConvertUnit(val, direction, unit) {
+  console.log('convert unit ' + unit + ' val ' + val + ' og ' + direction);
   if (direction === DECREASE) {
     // check min to see if shuold drop units. Tsp min
     return unit !== units.TSP && val < unitConversions[unit].min;
@@ -35,35 +34,13 @@ export function shouldConvertUnit(val, direction, unit) {
   return unit !== units.CUP && val > unitConversions[unit].max;
 }
 
-export function convertUnit(value, unit, direction) {
-  let closestVal = Infinity;
-  let resUnit = unit;
-  const revDirection = direction === INCREASE ? DECREASE : INCREASE;
-  for ([newUnit, vals] of Object.entries(unitConversions[unit])) {
-    if (['min', 'max'].includes(newUnit)) continue;
-
-    if (Math.abs(vals[revDirection] - value) < closestVal) {
-      closestVal = Math.abs(vals[revDirection] - value);
-      resUnit = newUnit;
-    }
-  }
-  return resUnit;
+export function convertUnit(unit, direction) {
+  return unitConversions[unit][direction];
 }
 
-export function calculateMeasurement(
-  val,
-  ogUnit,
-  newUnit = null,
-  direction = null,
-) {
-  // unit did not change
-  if (!newUnit) {
-    return val;
-  }
+export function calculateMeasurement(val, conversion) {
   // round 2 decimal places
-  return (
-    Math.round(val * unitConversions[ogUnit][newUnit][direction] * 100) / 100
-  );
+  return Math.round(val * conversion * 1000) / 1000;
 }
 
 export function handleIngredientCalculation(recipe) {
@@ -83,15 +60,19 @@ export function handleIngredientCalculation(recipe) {
 
   return recipe.ingredients.map(({name, unit, value}) => {
     const adjustedVal = adjustIngredientMeasurement(value, ratio);
-    let resVal = 0;
-    let resUnit = unit
-    if (shouldConvertUnit(adjustedVal, direction, unit)) {
-      resUnit = convertUnit(adjustedVal, unit, direction);
-      resVal = calculateMeasurement(adjustedVal, unit, resUnit, direction);
+    let resVal = adjustedVal;
+    let resUnit = unit;
+    while (shouldConvertUnit(resVal, direction, resUnit)) {
+      console.log('unit ' + resUnit + ' val ' + resVal + ' og ' + adjustedVal);
+      
+      conversion = unitConversions[resUnit][direction].conversion;
+      resUnit = unitConversions[resUnit][direction].unit;
+      console.log('new unit ' + resUnit)
+      console.log('new conversion ' + conversion)
+      resVal = calculateMeasurement(resVal, conversion);
+      console.log('new value ' + resVal)
       // TODO add fraction rounding
       // TODO handle converting unit after new measurement. (e.g hitting max after conversion)
-    } else {
-      resVal = calculateMeasurement(adjustedVal, unit);
     }
     return {name: name, value: resVal, unit: resUnit};
   });

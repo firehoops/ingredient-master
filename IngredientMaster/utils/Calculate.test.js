@@ -50,50 +50,28 @@ describe('shouldConvertUnit', () => {
 });
 
 describe('calculateMeasurement', () => {
-  it('should handle no unit change', () => {
-    expect(calculateMeasurement(1, units.CUP)).toEqual(1);
-  });
-
   it('should handle unit change down 1', () => {
-    expect(
-      calculateMeasurement(0.0625, units.CUP, units.TBSP, DECREASE),
-    ).toEqual(1);
-  });
-
-  it('should handle unit change down 2', () => {
-    expect(calculateMeasurement(0.016, units.CUP, units.TSP, DECREASE)).toEqual(
-      0.77,
-    );
+    expect(calculateMeasurement(0.0625, 16)).toEqual(1);
   });
 
   it('should handle unit change up 1', () => {
-    expect(calculateMeasurement(0.75, units.TSP, units.TBSP, INCREASE)).toEqual(
-      0.25,
-    );
-  });
-
-  it('should handle unit change up 2', () => {
-    expect(calculateMeasurement(8, units.TSP, units.CUP, INCREASE)).toEqual(
-      0.17,
-    );
+    expect(calculateMeasurement(0.75, 1 / 3)).toEqual(0.25);
   });
 });
 
 describe('converUnit', () => {
   it('should handle down 1', () => {
-    expect(convertUnit(0.0625, units.CUP, DECREASE)).toEqual(units.TBSP);
-  });
-
-  it('should handle down 2', () => {
-    expect(convertUnit(0.02, units.CUP, DECREASE)).toEqual(units.TSP);
+    expect(convertUnit(units.CUP, DECREASE)).toEqual({
+      unit: units.TBSP,
+      conversion: 16,
+    });
   });
 
   it('should handle up 1', () => {
-    expect(convertUnit(2, units.TSP, INCREASE)).toEqual(units.TBSP);
-  });
-
-  it('should handle up 2', () => {
-    expect(convertUnit(30, units.TSP, INCREASE)).toEqual(units.CUP);
+    expect(convertUnit(units.TSP, INCREASE)).toEqual({
+      unit: units.TBSP,
+      conversion: 1 / 3,
+    });
   });
 });
 
@@ -151,7 +129,7 @@ describe('handleIngredientCalculation', () => {
       newServingSize: 2,
     };
     const expected = [
-      {name: 'Flour', value: 0.96, unit: 'tbsp'},
+      {name: 'Flour', value: 1.008, unit: 'tbsp'},
       {name: 'Sugar', value: 0.5, unit: 'cup'},
     ];
     expect(handleIngredientCalculation(recipe)).toEqual(expected);
@@ -185,8 +163,8 @@ describe('handleIngredientCalculation', () => {
       newServingSize: 2,
     };
     const expected = [
-      {name: 'Flour', value: .13, unit: 'cup'},
-      {name: 'Sugar', value: .5, unit: 'cup'},
+      {name: 'Flour', value: 0.125, unit: 'cup'},
+      {name: 'Sugar', value: 0.5, unit: 'cup'},
     ];
     expect(handleIngredientCalculation(recipe)).toEqual(expected);
   });
@@ -194,30 +172,33 @@ describe('handleIngredientCalculation', () => {
   it('should decrease 2 units', () => {
     const recipe = {
       name: 'Test Recipe',
-      ingredients: [
-        {name: 'Flour', value: 0.125, unit: 'cup'},
-      ],
-      originalServingSize: 8,
+      ingredients: [{name: 'Flour', value: 0.0625, unit: 'cup'}],
+      originalServingSize: 12,
       newServingSize: 2,
     };
-    const expected = [
-      {name: 'Flour', value: 1.44, unit: 'tsp'},
-    ];
+    const expected = [{name: 'Flour', value: 0.48, unit: 'tsp'}];
     expect(handleIngredientCalculation(recipe)).toEqual(expected);
   });
 
   it('should increase 2 units', () => {
     const recipe = {
       name: 'Test Recipe',
-      ingredients: [
-        {name: 'Flour', value: 5, unit: 'tsp'},
-      ],
+      ingredients: [{name: 'Flour', value: 5, unit: 'tsp'}],
       originalServingSize: 2,
       newServingSize: 12,
     };
-    const expected = [
-      {name: 'Flour', value: .63, unit: 'cup'},
-    ];
+    const expected = [{name: 'Flour', value: 0.625, unit: 'cup'}];
+    expect(handleIngredientCalculation(recipe)).toEqual(expected);
+  });
+
+  it('should increase 2 units and loop', () => {
+    const recipe = {
+      name: 'Test Recipe',
+      ingredients: [{name: 'Flour', value: 6, unit: 'tsp'}],
+      originalServingSize: 2,
+      newServingSize: 6,
+    };
+    const expected = [{name: 'Flour', value: 0.375, unit: 'cup'}];
     expect(handleIngredientCalculation(recipe)).toEqual(expected);
   });
 });
